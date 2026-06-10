@@ -16,6 +16,15 @@ BLOCK_LABELS_ZH = {
     "news": "新闻",
 }
 
+BLOCK_LABELS_ZHTW = {
+    "quote": "行情",
+    "daily_bars": "日線",
+    "technical": "技術",
+    "chip": "籌碼",
+    "fundamentals": "基本面",
+    "news": "新聞",
+}
+
 BLOCK_LABELS_EN = {
     "quote": "quote",
     "daily_bars": "daily bars",
@@ -36,6 +45,17 @@ STATUS_LABELS_ZH = {
     "fetch_failed": "抓取失败",
 }
 
+STATUS_LABELS_ZHTW = {
+    "available": "可用",
+    "missing": "缺失",
+    "not_supported": "不支援",
+    "fallback": "降級",
+    "stale": "過期",
+    "estimated": "估算",
+    "partial": "部分可用",
+    "fetch_failed": "擷取失敗",
+}
+
 STATUS_LABELS_EN = {
     "available": "available",
     "missing": "missing",
@@ -52,6 +72,13 @@ QUALITY_LEVEL_LABELS_ZH = {
     "usable": "可用",
     "limited": "受限",
     "poor": "较差",
+}
+
+QUALITY_LEVEL_LABELS_ZHTW = {
+    "good": "良好",
+    "usable": "可用",
+    "limited": "受限",
+    "poor": "較差",
 }
 
 QUALITY_LEVEL_LABELS_EN = {
@@ -101,15 +128,21 @@ SENSITIVE_MARKERS = (
 
 
 def normalize_analysis_context_pack_language(report_language: str = "zh") -> str:
-    return "en" if str(report_language or "").lower() == "en" else "zh"
+    lang = str(report_language or "").lower().replace("_", "-")
+    if lang == "en":
+        return "en"
+    if lang in ("zh-tw", "zh-hant", "tw", "traditional"):
+        return "zh-tw"
+    return "zh"
 
 
 def get_analysis_context_pack_block_labels(report_language: str = "zh") -> Dict[str, str]:
-    return (
-        BLOCK_LABELS_EN
-        if normalize_analysis_context_pack_language(report_language) == "en"
-        else BLOCK_LABELS_ZH
-    )
+    lang = normalize_analysis_context_pack_language(report_language)
+    if lang == "en":
+        return BLOCK_LABELS_EN
+    if lang == "zh-tw":
+        return BLOCK_LABELS_ZHTW
+    return BLOCK_LABELS_ZH
 
 
 def iter_analysis_context_pack_block_keys(blocks: Mapping[str, Any]) -> List[str]:
@@ -139,7 +172,11 @@ def format_analysis_context_pack_prompt_section(
         return ""
 
     lang = normalize_analysis_context_pack_language(report_language)
-    return _format_en(payload) if lang == "en" else _format_zh(payload)
+    if lang == "en":
+        return _format_en(payload)
+    if lang == "zh-tw":
+        return _format_zh(payload, lang="zh-tw")
+    return _format_zh(payload)
 
 
 def analysis_context_pack_to_dict(pack: Any) -> Dict[str, Any]:
@@ -162,20 +199,28 @@ def analysis_context_pack_to_dict(pack: Any) -> Dict[str, Any]:
 _pack_to_dict = analysis_context_pack_to_dict
 
 
-def _format_zh(payload: Dict[str, Any]) -> str:
-    lines = ["", "## 分析上下文包摘要"]
-    lines.extend(_subject_lines(payload, lang="zh"))
-    block_lines = _block_lines(payload, lang="zh")
+def _format_zh(payload: Dict[str, Any], lang: str = "zh") -> str:
+    if lang == "zh-tw":
+        heading = "## 分析上下文包摘要"
+        block_status_label = "- 資料區塊狀態："
+        quality_label = "資料品質提醒"
+    else:
+        heading = "## 分析上下文包摘要"
+        block_status_label = "- 数据块状态："
+        quality_label = "数据质量提醒"
+    lines = ["", heading]
+    lines.extend(_subject_lines(payload, lang=lang))
+    block_lines = _block_lines(payload, lang=lang)
     if block_lines:
-        lines.append("- 数据块状态：")
+        lines.append(block_status_label)
         lines.extend(f"  - {line}" for line in block_lines)
-    metadata_lines = _metadata_lines(payload, lang="zh")
+    metadata_lines = _metadata_lines(payload, lang=lang)
     if metadata_lines:
         lines.extend(metadata_lines)
     warnings = _list_strings(_nested(payload, "data_quality", "warnings"))
     if warnings:
-        lines.append(f"- 数据质量提醒：{_join_text(warnings, lang='zh')}")
-    lines.extend(_data_limitation_lines(payload, lang="zh"))
+        lines.append(f"- {quality_label}：{_join_text(warnings, lang=lang)}")
+    lines.extend(_data_limitation_lines(payload, lang=lang))
     return "\n".join(lines) + "\n"
 
 
@@ -265,7 +310,7 @@ def _block_lines(payload: Dict[str, Any], *, lang: str) -> List[str]:
             reason_label = "missing_reason" if lang == "en" else "missing_reason"
             parts.append(f"{reason_label}={_join_text(reasons, lang=lang)}")
 
-        lines.append("；".join(parts) if lang == "zh" else "; ".join(parts))
+        lines.append("; ".join(parts) if lang == "en" else "；".join(parts))
     return lines
 
 
@@ -350,7 +395,7 @@ def _data_limitation_lines(payload: Dict[str, Any], *, lang: str) -> List[str]:
 
 def _localized_limitations(limitations: List[str], *, lang: str) -> List[str]:
     labels = get_analysis_context_pack_block_labels(lang)
-    status_labels = STATUS_LABELS_EN if lang == "en" else STATUS_LABELS_ZH
+    status_labels = STATUS_LABELS_EN if lang == "en" else (STATUS_LABELS_ZHTW if lang == "zh-tw" else STATUS_LABELS_ZH)
     result: List[str] = []
     for item in limitations:
         key, separator, status = item.partition(":")
@@ -437,7 +482,7 @@ def _phase_value(payload: Dict[str, Any]) -> str:
 
 
 def _quality_level_label(level: str, *, lang: str) -> str:
-    labels = QUALITY_LEVEL_LABELS_EN if lang == "en" else QUALITY_LEVEL_LABELS_ZH
+    labels = QUALITY_LEVEL_LABELS_EN if lang == "en" else (QUALITY_LEVEL_LABELS_ZHTW if lang == "zh-tw" else QUALITY_LEVEL_LABELS_ZH)
     return labels.get(level, "")
 
 
