@@ -1239,15 +1239,16 @@ Output the report content directly, no extra commentary.
 """
 
         # A 股场景使用中文提示语
-        return f"""你是一位专业的A/H/美股市场分析师，请根据以下数据生成一份结构化的{self._get_market_scope_name('zh')}大盘复盘报告。
+        lang_instruction = "- 【語言要求】全文必須使用**繁體中文**，禁止出現任何簡體中文字符\n" if review_language == "zh-tw" else ""
+        return f"""你是一位專業的A/H/美股市場分析師，請根據以下數據生成一份結構化的{self._get_market_scope_name(review_language)}大盤複盤報告。
 
-【重要】输出要求：
-- 必须输出纯 Markdown 文本格式
-- 禁止输出 JSON 格式
-- 禁止输出代码块
-- emoji 仅在标题处少量使用（每个标题最多1个）
-- 报告要像交易员盘后工作台：先给结论，再按数据表、主线、催化、计划展开
-- 不要重复列出已由系统注入的表格数据；正文负责解释表格背后的含义
+【重要】輸出要求：
+{lang_instruction}- 必須輸出純 Markdown 文本格式
+- 禁止輸出 JSON 格式
+- 禁止輸出代碼塊
+- emoji 僅在標題處少量使用（每個標題最多1個）
+- 報告要像交易員盤後工作台：先給結論，再按數據表、主線、催化、計劃展開
+- 不要重複列出已由系統注入的表格數據；正文負責解釋表格背後的含義
 
 ---
 

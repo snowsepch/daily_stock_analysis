@@ -2149,6 +2149,16 @@ class GeminiAnalyzer:
 - Use the common English company name when you are confident; otherwise keep the original listed company name instead of inventing one.
 - This includes `stock_name`, `trend_prediction`, `operation_advice`, `confidence_level`, nested dashboard text, checklist items, and all narrative summaries.
 """
+        if lang == "zh-tw":
+            return base_prompt + """
+
+## 輸出語言（最高優先級）
+
+- 所有 JSON 鍵名保持不變。
+- `decision_type` 必須保持為 `buy|hold|sell`。
+- 所有面向用戶的人類可讀文字值必須使用**繁體中文**。
+- 禁止使用簡體中文字符，包括所有分析內容、建議、摘要、股票名稱等。
+"""
         return base_prompt + """
 
 ## 输出语言（最高优先级）
