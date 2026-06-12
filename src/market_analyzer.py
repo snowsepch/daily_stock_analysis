@@ -1302,7 +1302,7 @@ Output the report content directly, no extra commentary.
 
 ---
 
-请直接输出复盘报告内容，不要输出其他说明文字。
+{"【最終語言要求】以上所有內容及你的輸出必須全部使用繁體中文，嚴禁使用任何簡體中文字符。" if review_language == "zh-tw" else "请直接输出复盘报告内容，不要输出其他说明文字。"}
 """
     
     def _generate_template_review(self, overview: MarketOverview, news: List) -> str:
